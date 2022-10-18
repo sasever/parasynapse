@@ -1,0 +1,381 @@
+{
+	"name": "ParameterisedPipeline",
+	"properties": {
+		"description": "Parameterised pipeline that reads a json from ADLS, converts to csv, and calculates aggregations and writes to a database.",
+		"activities": [
+			{
+				"name": "CopyFromSourceToStaging",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "BlobGen2DelimitedText",
+						"type": "DatasetReference",
+						"parameters": {
+							"FilePath": {
+								"value": "@pipeline().parameters.cInputPath",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.cInputFileName",
+								"type": "Expression"
+							},
+							"FileExtension": {
+								"value": "@pipeline().parameters.cInputType",
+								"type": "Expression"
+							},
+							"FileSystem": {
+								"value": "@pipeline().parameters.cInputFileSystem",
+								"type": "Expression"
+							},
+							"HeaderFirstRow": {
+								"value": "@pipeline().parameters.cInputHeader",
+								"type": "Expression"
+							},
+							"Delimiter": {
+								"value": "@pipeline().parameters.cInputDelimiter",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "BlobGen2DelimitedText",
+						"type": "DatasetReference",
+						"parameters": {
+							"FilePath": {
+								"value": "@pipeline().parameters.StagingLocation",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.cOutputFileName",
+								"type": "Expression"
+							},
+							"FileExtension": {
+								"value": "@pipeline().parameters.cOutputType",
+								"type": "Expression"
+							},
+							"FileSystem": {
+								"value": "@pipeline().parameters.cOutputFileSystem",
+								"type": "Expression"
+							},
+							"HeaderFirstRow": {
+								"value": "@pipeline().parameters.cOutputHeader",
+								"type": "Expression"
+							},
+							"Delimiter": {
+								"value": "@pipeline().parameters.cOutputDelimiter",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "CalculateAggregates",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "CopyFromSourceToStaging",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "nbaparametricAggregate",
+						"type": "DataFlowReference",
+						"parameters": {
+							"dOutputFileName": {
+								"value": "'@{concat(pipeline().parameters.cOutputFileName,pipeline().parameters.cOutputType)}'",
+								"type": "Expression"
+							},
+							"dAggOperations": {
+								"value": "'@{pipeline().parameters.aggOperations}'",
+								"type": "Expression"
+							},
+							"dAggColumnsForEachOperation": {
+								"value": "'@{pipeline().parameters.aggColumnsForEachOperation}'",
+								"type": "Expression"
+							},
+							"dAggGroupByColName": {
+								"value": "'@{pipeline().parameters.aggGroupByColName}'",
+								"type": "Expression"
+							}
+						},
+						"datasetParameters": {
+							"source1": {
+								"FilePath": {
+									"value": "@pipeline().parameters.StagingLocation",
+									"type": "Expression"
+								},
+								"FileName": {
+									"value": "@pipeline().parameters.cOutputFileName",
+									"type": "Expression"
+								},
+								"FileExtension": {
+									"value": "@pipeline().parameters.cOutputType",
+									"type": "Expression"
+								},
+								"FileSystem": {
+									"value": "@pipeline().parameters.cOutputFileSystem",
+									"type": "Expression"
+								},
+								"HeaderFirstRow": {
+									"value": "@pipeline().parameters.cOutputHeader",
+									"type": "Expression"
+								},
+								"Delimiter": {
+									"value": "@pipeline().parameters.cOutputDelimiter",
+									"type": "Expression"
+								}
+							},
+							"sink1": {
+								"FilePath": {
+									"value": "@pipeline().parameters.cOutputPath",
+									"type": "Expression"
+								},
+								"FileName": {
+									"value": "@pipeline().parameters.cOutputFileName",
+									"type": "Expression"
+								},
+								"FileExtension": {
+									"value": "@pipeline().parameters.cOutputType",
+									"type": "Expression"
+								},
+								"FileSystem": {
+									"value": "@pipeline().parameters.cOutputFileSystem",
+									"type": "Expression"
+								},
+								"HeaderFirstRow": {
+									"value": "@pipeline().parameters.cOutputHeader",
+									"type": "Expression"
+								},
+								"Delimiter": {
+									"value": "@pipeline().parameters.cOutputDelimiter",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "writeToDB",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "CalculateAggregates",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"tableOption": "autoCreate",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "BlobGen2DelimitedText",
+						"type": "DatasetReference",
+						"parameters": {
+							"FilePath": {
+								"value": "@pipeline().parameters.cOutputPath",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@pipeline().parameters.cOutputFileName",
+								"type": "Expression"
+							},
+							"FileExtension": {
+								"value": "@pipeline().parameters.cOutputType",
+								"type": "Expression"
+							},
+							"FileSystem": {
+								"value": "@pipeline().parameters.cOutputFileSystem",
+								"type": "Expression"
+							},
+							"HeaderFirstRow": {
+								"value": "@pipeline().parameters.cOutputHeader",
+								"type": "Expression"
+							},
+							"Delimiter": {
+								"value": "@pipeline().parameters.cOutputDelimiter",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "AzureSQL",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"parameters": {
+			"runtype": {
+				"type": "string",
+				"defaultValue": "dataflow"
+			},
+			"cInputFileSystem": {
+				"type": "string",
+				"defaultValue": "sample"
+			},
+			"cOutputFileSystem": {
+				"type": "string",
+				"defaultValue": "sample"
+			},
+			"cInputPath": {
+				"type": "string",
+				"defaultValue": "NBA"
+			},
+			"cOutputPath": {
+				"type": "string",
+				"defaultValue": "NBA3"
+			},
+			"cInputType": {
+				"type": "string",
+				"defaultValue": ".csv"
+			},
+			"cOutputType": {
+				"type": "string",
+				"defaultValue": ".csv"
+			},
+			"cInputFileName": {
+				"type": "string",
+				"defaultValue": "NBA_Salaries_1"
+			},
+			"cOutputFileName": {
+				"type": "string",
+				"defaultValue": "NBA_aggregates"
+			},
+			"cInputDelimiter": {
+				"type": "string",
+				"defaultValue": ","
+			},
+			"cOutputDelimiter": {
+				"type": "string",
+				"defaultValue": ","
+			},
+			"cInputHeader": {
+				"type": "string",
+				"defaultValue": "Y"
+			},
+			"cOutputHeader": {
+				"type": "string",
+				"defaultValue": "Y"
+			},
+			"aggOperations": {
+				"type": "string",
+				"defaultValue": "|mean|,|max|,|min|"
+			},
+			"aggGroupByColName": {
+				"type": "string",
+				"defaultValue": "Team"
+			},
+			"aggColumnsForEachOperation": {
+				"type": "string",
+				"defaultValue": "|Salary|Age|,|Age|Height|,|Height|"
+			},
+			"StagingLocation": {
+				"type": "string",
+				"defaultValue": "staging"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-10-18T15:32:21Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

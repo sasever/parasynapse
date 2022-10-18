@@ -1,0 +1,56 @@
+{
+	"name": "nbaparametricAggregate",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "BlobGen2DelimitedText",
+						"type": "DatasetReference"
+					},
+					"name": "source1"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "BlobGen2DelimitedText",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "aggregate1"
+				}
+			],
+			"scriptLines": [
+				"parameters{",
+				"     dOutputFileName as string,",
+				"     dAggOperations as string ('|mean|,|max|,|min|'),",
+				"     dAggColumnsForEachOperation as string ('|Salary|Age|,|Age|Height|,|Height|'),",
+				"     dAggGroupByColName as string ('Team')",
+				"}",
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
+				"     ignoreNoFilesFound: false) ~> source1",
+				"source1 aggregate(groupBy(Team = toString(byName($dAggGroupByColName))),",
+				"     each(match(locate(concat('|',name,'|'),at(keyValues(split($dAggOperations,','),split($dAggColumnsForEachOperation,',')),'|mean|'))>0), concat(\"mean\",initCap(toString($$))) = mean(toDouble($$))),",
+				"          each(match(locate(concat('|',name,'|'),at(keyValues(split('|mean|,|max|,|min|',','),split('|Salary|Age|,|Age|Height|,|Height|',',')),'|max|'))>0), concat(\"max\",initCap(toString($$))) = max(toDouble($$))),",
+				"          each(match(locate(concat('|',name,'|'),iifNull(at(keyValues(split('|mean|,|max|,|min|',','),split('|Salary|Age|,|Age|Height|,|Height|',',')),'|min|'),'||'))>0), concat(\"min\",initCap(toString($$))) = min(toDouble($$)))) ~> aggregate1",
+				"aggregate1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:[($dOutputFileName)],",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}

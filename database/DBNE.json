@@ -1,0 +1,25 @@
+{
+	"name": "DBNE",
+	"properties": {
+		"Name": "DBNE",
+		"EntityType": "DATABASE",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"Properties": {
+			"IsSyMSCDMDatabase": true
+		},
+		"Source": {
+			"Provider": "ADLS",
+			"Location": "abfss://lakedb@lakedbne.dfs.core.windows.net/",
+			"Properties": {
+				"FormatType": "csv",
+				"LinkedServiceName": "lakedbne"
+			}
+		},
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 1,
+		"ObjectId": "691ae542-3afa-4226-9573-98098a741b89"
+	},
+	"type": "DATABASE"
+}

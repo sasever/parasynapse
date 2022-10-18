@@ -1,0 +1,66 @@
+{
+	"name": "BlobGen2DelimitedText",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "lakedbne",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"FilePath": {
+				"type": "string",
+				"defaultValue": "NBA"
+			},
+			"FileName": {
+				"type": "string",
+				"defaultValue": "NBA_Salaries_1"
+			},
+			"FileExtension": {
+				"type": "string",
+				"defaultValue": ".csv"
+			},
+			"FileSystem": {
+				"type": "string",
+				"defaultValue": "sample"
+			},
+			"HeaderFirstRow": {
+				"type": "string",
+				"defaultValue": "Y"
+			},
+			"Delimiter": {
+				"type": "string",
+				"defaultValue": ","
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@concat(dataset().FileName,dataset().FileExtension)",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().FilePath",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().FileSystem",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": {
+				"value": "@dataset().Delimiter",
+				"type": "Expression"
+			},
+			"escapeChar": "\\",
+			"firstRowAsHeader": {
+				"value": "@equals(dataset().HeaderFirstRow,'Y')",
+				"type": "Expression"
+			},
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

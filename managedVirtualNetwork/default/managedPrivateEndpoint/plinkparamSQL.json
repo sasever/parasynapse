@@ -1,0 +1,10 @@
+{
+	"name": "plinkparamSQL",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/757c4165-0823-49f7-9678-5a85fe5e17cc/resourceGroups/rg_parametrisation_demo/providers/Microsoft.Sql/servers/paramdemosqlserver",
+		"groupId": "sqlServer",
+		"fqdns": [
+			"paramdemosqlserver.database.windows.net"
+		]
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"name": "AzureSQL",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SQLParam",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "sampletable"
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

@@ -1,0 +1,10 @@
+{
+	"name": "synapse-ws-sql--mnsynapsenoex",
+	"properties": {
+		"privateLinkResourceId": "/subscriptions/757c4165-0823-49f7-9678-5a85fe5e17cc/resourceGroups/noexflitrationprotection/providers/Microsoft.Synapse/workspaces/mnsynapsenoex",
+		"groupId": "sql",
+		"fqdns": [
+			"mnsynapsenoex.d03ff27d-557e-4678-8221-caaded133a95.sql.azuresynapse.net"
+		]
+	}
+}
